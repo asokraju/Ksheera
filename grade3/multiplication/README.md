@@ -11,4 +11,4 @@ who already knows the 1–10 times tables.
 | 38–49 | Extra practice: 8 Mad Minute sheets, fold-over flash cards, bingo |
 | 50–52 | Certificate, answer key |
 
-Rebuild (fixed random seeds keep the answer key in sync): `python3 build_book.py` (needs `reportlab`).
+Rebuild: `python3 build.py` (needs `reportlab`; shared helpers live in `common/printkit.py`). Fixed seeds keep the answer key in sync.

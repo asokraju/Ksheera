@@ -12,4 +12,4 @@ today, then 10 days of practice and reprintable extra practice.
 | 26–34 | 6 Mad Minute sheets + division flash cards |
 | 35–37 | Certificate, answer key |
 
-Rebuild: `python3 build_division_book.py` (needs `reportlab`; reuses helpers from `../multiplication/build_book.py`).
+Rebuild: `python3 build.py` (needs `reportlab`; shared helpers live in `common/printkit.py`).

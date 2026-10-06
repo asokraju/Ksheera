@@ -1,130 +1,17 @@
 #!/usr/bin/env python3
-"""Build a printable 3rd-grade division book: one hands-on lesson for today + practice until it's easy.
+"""Grade 3 · Division Made Easy: one hands-on lesson for today + practice until it's easy.
 
-Run:  python3 build_division_book.py   ->  Division_Made_Easy_Grade3.pdf
-Reuses the drawing helpers from ../multiplication/build_book.py. Fixed seeds keep the answer key in sync.
+Run:  python3 build.py   ->  Division_Made_Easy_Grade3.pdf
+Every worksheet uses a fixed random seed, so the answer key always matches.
 """
-import math
 import os
 import random
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "multiplication"))
-from build_book import (B, BOX, CIRC, FH, FW, GRAY, INK, KEY, MAD, MARGIN, R, ST, TH, WHITE, P, Page,  # noqa: E402
-                        bullets, card, colors, esc, expr, footer, h_mul, hdrill, hdrill_page, header, mult_chart,
-                        numberline, on_page, para, pick, pool, section, stringWidth, table, text, tip, triangle,
-                        word_card, write_line)
-from reportlab.lib.pagesizes import letter  # noqa: E402
-from reportlab.platypus import (BaseDocTemplate, Frame, KeepTogether, PageBreak, PageTemplate,  # noqa: E402
-                                Spacer, Table, TableStyle)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+from common.printkit import *  # noqa: E402,F401,F403
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Division_Made_Easy_Grade3.pdf")
-COOKIE, CHIP = colors.HexColor("#F3D9A4"), colors.HexColor("#8A5A1E")
-
-
-# ---------------------------------------------------------------- pictures
-def cookie(c, cx, cy, r):
-    c.setFillColor(COOKIE)
-    c.setStrokeColor(CHIP)
-    c.setLineWidth(0.8)
-    c.circle(cx, cy, r, stroke=1, fill=1)
-    c.setFillColor(CHIP)
-    for dx, dy in ((-0.35, 0.25), (0.3, 0.3), (0.05, -0.35)):
-        c.circle(cx + dx * r, cy + dy * r, r * 0.14, stroke=0, fill=1)
-
-
-def plate(c, cx, cy, r):
-    c.setFillColor(WHITE)
-    c.setStrokeColor(GRAY)
-    c.setLineWidth(1.5)
-    c.circle(cx, cy, r, stroke=1, fill=1)
-    c.setLineWidth(0.6)
-    c.circle(cx, cy, r * 0.72, stroke=1, fill=0)
-
-
-def star(c, cx, cy, r, color):
-    p = c.beginPath()
-    for i in range(10):
-        ang = math.pi / 2 + i * math.pi / 5
-        rr = r if i % 2 == 0 else r * 0.45
-        x, y = cx + rr * math.cos(ang), cy + rr * math.sin(ang)
-        (p.moveTo if i == 0 else p.lineTo)(x, y)
-    p.close()
-    c.setFillColor(color)
-    c.drawPath(p, stroke=0, fill=1)
-
-
-def cookie_rows(c, x, ytop, n, r=5.5, gap=15, per_row=10):
-    for i in range(n):
-        row, col = divmod(i, per_row)
-        cookie(c, x + col * gap + r, ytop - row * gap - r, r)
-
-
-def scattered_stars(c, x, ytop, n, rng, color, cols=6, gap=21):
-    for i in range(n):
-        row, col = divmod(i, cols)
-        star(c, x + col * gap + 10 + rng.uniform(-3, 3), ytop - row * gap - 10 + rng.uniform(-3, 3), 8, color)
-
-
-def jumps_back(c, x, y, w, maxv, start, size, theme):
-    """Number line 0..maxv with jumps from `start` back to 0."""
-    numberline(c, x, y, w, maxv, 0, 1, theme)
-    unit = w / maxv
-    dark = theme[1]
-    v = start
-    while v > 0:
-        x0, x1 = x + v * unit, x + (v - size) * unit
-        hgt = min(30, 10 + size * unit * 0.4)
-        c.setStrokeColor(dark)
-        c.setLineWidth(1.5)
-        p = c.beginPath()
-        p.moveTo(x0, y + 2)
-        p.curveTo(x0, y + hgt, x1, y + hgt, x1, y + 3)
-        c.drawPath(p, stroke=1, fill=0)
-        c.setFillColor(dark)
-        a = c.beginPath()
-        a.moveTo(x1, y + 2)
-        a.lineTo(x1 - 3.5, y + 9)
-        a.lineTo(x1 + 3.5, y + 9)
-        a.close()
-        c.drawPath(a, stroke=0, fill=1)
-        v -= size
-
-
-def arrow(c, x0, y0, x1, y1, color, lw=2.5):
-    c.setStrokeColor(color)
-    c.setFillColor(color)
-    c.setLineWidth(lw)
-    c.line(x0, y0, x1, y1)
-    ang = math.atan2(y1 - y0, x1 - x0)
-    p = c.beginPath()
-    p.moveTo(x1, y1)
-    for da in (2.6, -2.6):
-        p.lineTo(x1 + 10 * math.cos(ang + da), y1 + 10 * math.sin(ang + da))
-    p.close()
-    c.drawPath(p, stroke=0, fill=1)
-
-
-# ---------------------------------------------------------------- problem generators
-def h_div(d, q):
-    return [d * q, "÷", d, "=", BOX], q
-
-
-def h_div_missing(d, q, rng):
-    k = rng.randrange(3)
-    if k == 0:
-        return [BOX, "÷", d, "=", q], d * q
-    if k == 1:
-        return [d * q, "÷", BOX, "=", q], d
-    return [d, "×", BOX, "=", d * q], q
-
-
-def div_facts(rng, n, divisors, lo=1):
-    return [h_div(d, q) for d, q in pick(rng, [(d, q) for d in divisors for q in range(lo, 11)], n)]
-
-
-def sym(x, y):
-    return "=" if x == y else (">" if x > y else "<")
 
 
 # ================================================================= TODAY'S LESSON
@@ -193,7 +80,6 @@ def lesson3():
                    "Count how many dots are in ONE row. That is the answer to the division!")
         bh = 92
         card(c, 0, y - bh, W, bh, T, fill=True)
-        from build_book import draw_array
         draw_array(c, 18, y - 14, 3, 4, 16, T[1])
         for i, f in enumerate(["3 rows of 4:   3 × 4 = 12", "12 dots in 3 rows:   12 ÷ 3 = 4",
                                "12 dots in rows of 4:   12 ÷ 4 = 3"]):
@@ -669,15 +555,6 @@ def certificate(c, W, H):
     text(c, W / 2, 110, "You did it, superstar!", 16, B, TH[2][1], "c")
 
 
-def section_title(title, sub, theme):
-    def draw(c, W, H):
-        c.setFillColor(theme[0])
-        c.roundRect(0, H / 2 - 90, W, 180, 20, stroke=0, fill=1)
-        text(c, W / 2, H / 2 + 10, title, 34, B, theme[1], "c")
-        text(c, W / 2, H / 2 - 30, sub, 14, R, INK, "c")
-    return draw
-
-
 # ================================================================= parent guide
 PARTS = [
     ("Part 1 · Fair sharing", "15 min", "Page: Part 1",
@@ -824,19 +701,7 @@ def tracker_story():
     return s
 
 
-def key_story():
-    s = [P("Answer Key (for grown-ups)", "h1"), P("Answers are listed in the same order as on each page.")]
-    for title, answers in KEY:
-        s.append(P(esc(title), "key_h"))
-        s.append(P("&nbsp;&nbsp; ".join(f"<b>{i + 1}.</b>&nbsp;{esc(a)}" for i, a in enumerate(answers)), "key"))
-    return s
-
-
 def build():
-    doc = BaseDocTemplate(OUT, pagesize=letter, leftMargin=MARGIN, rightMargin=MARGIN, topMargin=MARGIN,
-                          bottomMargin=MARGIN, title="Division Made Easy – 3rd Grade", author="Learn & practice plan")
-    doc.addPageTemplates([PageTemplate("p", [Frame(MARGIN, MARGIN, FW, FH, 0, 0, 0, 0)], onPage=on_page)])
-
     lessons = [lesson1(), lesson2(), lesson3(), lesson4(), lesson5(), lesson6()]
     practice = [
         practice_facts(1, TH[1], "Divide by 2 and 3", (2, 3), 501,
@@ -868,8 +733,7 @@ def build():
     story += [Page(f) for f in extras + flash_cards()]
     story.append(Page(certificate))
     story += key_story()
-    doc.build(story)
-    print("wrote", OUT)
+    build_pdf(OUT, "Division Made Easy – 3rd Grade", story)
 
 
 if __name__ == "__main__":
