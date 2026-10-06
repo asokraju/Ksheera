@@ -9,12 +9,14 @@ worksheets, reprintable extra practice, a tracker, a certificate and an answer k
 |---|---|---|---|
 | 3rd | Multiplication Mastery — 4-week plan | [grade3/multiplication](grade3/multiplication/Multiplication_Mastery_Grade3.pdf) | 52 |
 | 3rd | Division Made Easy — learn it today + 10 days practice | [grade3/division](grade3/division/Division_Made_Easy_Grade3.pdf) | 37 |
-| K | *(coming next)* | [kindergarten/](kindergarten/) | |
+| K | Rudhra's Word Workshop — reading 3-letter words | [kindergarten/cvc_words](kindergarten/cvc_words/Rudhras_Word_Workshop_3_Letter_Words.pdf) | 45 |
+| K | *(next)* Addition & subtraction | | |
 
 ## Layout
 
 ```
 common/printkit.py      shared fonts, page layout, drawing & problem helpers (used by every book)
+common/icons.py         ~55 kid-friendly vector pictures (cat, bus, train, solar panel, ...)
 grade3/<topic>/         build.py + the generated PDF + README
 kindergarten/<topic>/   same pattern
 build_all.py            rebuild every book
